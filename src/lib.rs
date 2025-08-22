@@ -1,14 +1,27 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+#![warn(clippy::pedantic)]
+
+pub struct Session {}
+
+pub mod process {
+    pub struct Command {}
+
+    pub struct Child {}
+
+    pub struct ChildStdin {}
+
+    pub struct ChildStdout {}
+
+    pub struct ChildStderr {}
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub mod fs {
+    pub struct DirBuilder {}
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+    pub struct DirEntry {}
+
+    pub struct File {}
+
+    pub struct OpenOptions {}
+
+    pub struct ReadDir {}
 }
