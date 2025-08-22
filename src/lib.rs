@@ -5,7 +5,11 @@ pub struct Session {}
 pub mod process {
     pub struct Command {}
 
-    pub struct Child {}
+    pub struct Child {
+        pub stdin: Option<ChildStdin>,
+        pub stdout: Option<ChildStdout>,
+        pub stderr: Option<ChildStderr>,
+    }
 
     pub struct ChildStdin {}
 
