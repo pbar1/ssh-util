@@ -1,11 +1,71 @@
 #![warn(clippy::pedantic)]
 
+use bon::Builder;
+use camino::Utf8PathBuf;
+use secrecy::SecretSlice;
+use secrecy::SecretString;
+
 #[cfg(feature = "libssh2")]
 mod libssh2;
 #[cfg(feature = "openssh")]
 mod openssh;
 #[cfg(feature = "russh")]
 mod russh;
+
+/// SSH library.
+#[derive(Debug)]
+pub enum Driver {
+    #[cfg(feature = "libssh2")]
+    Libssh2,
+    #[cfg(feature = "openssh")]
+    OpenSsh,
+    #[cfg(feature = "russh")]
+    Russh,
+}
+
+/// SSH authentication payloads.
+#[derive(Debug)]
+pub enum Auth {
+    Password(SecretString),
+    Key {
+        private_key: SecretSlice<u8>,
+        passphrase: Option<SecretString>,
+    },
+    Certificate {
+        private_key: SecretSlice<u8>,
+        passphrase: Option<SecretString>,
+        certificate: Vec<u8>,
+    },
+    Agent {
+        path: Utf8PathBuf,
+    },
+}
+
+/// SSH session.
+#[derive(Debug, Builder)]
+pub struct Session {
+    #[builder(field)]
+    auth: Vec<Auth>,
+    /// Remote user to login as.
+    #[builder(into)]
+    user: String,
+    /// Remote host to connect to.
+    #[builder(into)]
+    host: String,
+    /// Port to connect to on the remote host.
+    #[builder(default = 22)]
+    port: u16,
+}
+
+impl<S: session_builder::State> SessionBuilder<S> {
+    /// Payload that will be used for authentication attempts. Will be called
+    /// in order until authentication succeeds; any remaining payloads will not
+    /// be used.
+    fn auth(mut self, value: Auth) -> Self {
+        self.auth.push(value);
+        self
+    }
+}
 
 pub mod process {
     pub struct Command {}
@@ -33,4 +93,20 @@ pub mod fs {
     pub struct OpenOptions {}
 
     pub struct ReadDir {}
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_session_builder() {
+        let session = Session::builder()
+            .user("root")
+            .host("localhost")
+            .port(22)
+            .auth(Auth::Password("password".into()))
+            .build();
+        dbg!(session);
+    }
 }
