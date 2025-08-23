@@ -51,13 +51,15 @@ pub enum Auth {
 }
 
 impl Auth {
-    fn from_password_file(password_file: impl AsRef<Utf8Path>) -> Auth {
+    /// Sources password from file.
+    pub fn from_password_file(password_file: impl AsRef<Utf8Path>) -> Auth {
         let password = std::fs::read_to_string(password_file.as_ref()).expect("todo");
         let password = SecretString::from(password);
         Auth::Password(password)
     }
 
-    fn from_key_file(
+    /// Sources SSH private key from file.
+    pub fn from_key_file(
         private_key_file: impl AsRef<Utf8Path>,
         passphrase: Option<impl AsRef<str>>,
     ) -> Auth {
@@ -70,7 +72,8 @@ impl Auth {
         }
     }
 
-    fn from_cert_file(
+    /// Sources SSH certificate and private key from files.
+    pub fn from_cert_file(
         private_key_file: impl AsRef<Utf8Path>,
         passphrase: Option<impl AsRef<str>>,
         certificate_file: impl AsRef<Utf8Path>,
@@ -86,7 +89,9 @@ impl Auth {
         }
     }
 
-    fn from_agent_env() -> Auth {
+    /// Sources SSH agent to connect to from `SSH_AUTH_SOCK` environment
+    /// variable.
+    pub fn from_agent_env() -> Auth {
         let path = std::env::var("SSH_AUTH_SOCK").expect("todo");
         let path = Utf8PathBuf::from(path);
         Auth::Agent { path }
@@ -114,13 +119,33 @@ impl<S: session_builder::State> SessionBuilder<S> {
     /// Payload that will be used for authentication attempts. Will be called
     /// in order until authentication succeeds; any remaining payloads will not
     /// be used.
-    fn auth(mut self, value: Auth) -> Self {
+    pub fn auth(mut self, value: Auth) -> Self {
         self.auth.push(value);
         self
     }
 }
 
-impl Session {}
+impl Session {
+    #[cfg(test)]
+    pub fn mock() -> SessionBuilder<session_builder::SetDriver> {
+        Session::builder().driver(Driver::Mock)
+    }
+
+    #[cfg(feature = "libssh2")]
+    pub fn libssh2() -> SessionBuilder<session_builder::SetDriver> {
+        Session::builder().driver(Driver::Libssh2)
+    }
+
+    #[cfg(feature = "openssh")]
+    pub fn openssh() -> SessionBuilder<session_builder::SetDriver> {
+        Session::builder().driver(Driver::OpenSsh)
+    }
+
+    #[cfg(feature = "russh")]
+    pub fn russh() -> SessionBuilder<session_builder::SetDriver> {
+        Session::builder().driver(Driver::Russh)
+    }
+}
 
 pub mod process {
     pub struct Command {}
