@@ -9,7 +9,7 @@ mod russh;
 
 /// Underlying SSH implementation to use.
 #[derive(Debug)]
-pub enum Driver {
+pub enum DriverKind {
     /// Dummy driver used for testing.
     #[cfg(test)]
     Mock,

@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use crate::Result;
 
-mod tokio_tcp;
+pub mod tokio_tcp;
 
 pub trait TransportFactory {
     async fn connect(&self, addr: SocketAddr) -> Result<Transport>;

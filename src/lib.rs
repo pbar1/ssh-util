@@ -8,7 +8,7 @@ mod error;
 mod transport;
 
 pub use auth::Auth;
-pub use driver::Driver;
+pub use driver::DriverKind;
 pub use error::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -28,7 +28,7 @@ pub struct Session {
     #[builder(default = 22)]
     port: u16,
     /// Underlying SSH implementation.
-    driver: Driver,
+    driver: DriverKind,
 }
 
 impl<S: session_builder::State> SessionBuilder<S> {

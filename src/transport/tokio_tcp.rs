@@ -50,7 +50,7 @@ mod tests {
             .modifier(Box::new(|socket| socket.set_reuseport(true)))
             .build();
 
-        let addr = SocketAddr::from_str("127.0.0.1:22").unwrap();
+        let addr = SocketAddr::from_str("127.0.0.1:2222").unwrap();
 
         let _stream = factory.connect(addr).await.unwrap();
     }
