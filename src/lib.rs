@@ -7,18 +7,26 @@ use secrecy::SecretString;
 
 #[cfg(feature = "libssh2")]
 mod libssh2;
+#[cfg(test)]
+mod mock;
 #[cfg(feature = "openssh")]
 mod openssh;
 #[cfg(feature = "russh")]
 mod russh;
 
-/// SSH library.
+/// Underlying SSH implementation to use.
 #[derive(Debug)]
 pub enum Driver {
+    /// Dummy driver used for testing.
+    #[cfg(test)]
+    Mock,
+    /// Rust bindings to the [libssh2](https://libssh2.org/) C library.
     #[cfg(feature = "libssh2")]
     Libssh2,
+    /// Shell out to the [OpenSSH](https://www.openssh.com/) binary.
     #[cfg(feature = "openssh")]
     OpenSsh,
+    /// Pure Rust [russh](https://github.com/Eugeny/russh) library.
     #[cfg(feature = "russh")]
     Russh,
 }
@@ -55,6 +63,7 @@ pub struct Session {
     /// Port to connect to on the remote host.
     #[builder(default = 22)]
     port: u16,
+    driver: Driver,
 }
 
 impl<S: session_builder::State> SessionBuilder<S> {
@@ -66,6 +75,8 @@ impl<S: session_builder::State> SessionBuilder<S> {
         self
     }
 }
+
+impl Session {}
 
 pub mod process {
     pub struct Command {}
@@ -106,6 +117,7 @@ mod tests {
             .host("localhost")
             .port(22)
             .auth(Auth::Password("password".into()))
+            .driver(Driver::Mock)
             .build();
         dbg!(session);
     }
