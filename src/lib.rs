@@ -1,6 +1,13 @@
 #![warn(clippy::pedantic)]
 
-pub struct Session {}
+use state_shift::type_state;
+
+#[cfg(feature = "libssh2")]
+mod libssh2;
+#[cfg(feature = "openssh")]
+mod openssh;
+#[cfg(feature = "russh")]
+mod russh;
 
 pub mod process {
     pub struct Command {}

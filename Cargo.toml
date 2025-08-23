@@ -4,13 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = []
-libssh2 = ["dep:libssh2"]
+default = ["libssh2", "openssh", "russh"]
+libssh2 = ["dep:async-ssh2-lite"]
 openssh = ["dep:tokio"]
 russh = ["dep:russh"]
 
 [dependencies]
-async-ssh2-lite = { version = "0.50", optional = true }
+async-ssh2-lite = { version = "0.5", optional = true }
 futures = "0.3"
 russh = { version = "0.45", optional = true }
 thiserror = "2"
