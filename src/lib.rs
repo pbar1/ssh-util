@@ -1,6 +1,7 @@
 #![warn(clippy::pedantic)]
 
 use bon::Builder;
+use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use secrecy::SecretSlice;
 use secrecy::SecretString;
@@ -47,6 +48,43 @@ pub enum Auth {
     Agent {
         path: Utf8PathBuf,
     },
+}
+
+impl Auth {
+    fn from_key_file(
+        private_key_file: impl AsRef<Utf8Path>,
+        passphrase: Option<impl AsRef<str>>,
+    ) -> Auth {
+        let private_key = std::fs::read(private_key_file.as_ref()).expect("todo");
+        let private_key = SecretSlice::from(private_key);
+        let passphrase = passphrase.map(|s| SecretString::from(s.as_ref()));
+        Auth::Key {
+            private_key,
+            passphrase,
+        }
+    }
+
+    fn from_cert_file(
+        private_key_file: impl AsRef<Utf8Path>,
+        passphrase: Option<impl AsRef<str>>,
+        certificate_file: impl AsRef<Utf8Path>,
+    ) -> Auth {
+        let private_key = std::fs::read(private_key_file.as_ref()).expect("todo");
+        let private_key = SecretSlice::from(private_key);
+        let passphrase = passphrase.map(|s| SecretString::from(s.as_ref()));
+        let certificate = std::fs::read(certificate_file.as_ref()).expect("todo");
+        Auth::Certificate {
+            private_key,
+            passphrase,
+            certificate,
+        }
+    }
+
+    fn from_agent_env() -> Auth {
+        let path = std::env::var("SSH_AUTH_SOCK").expect("todo");
+        let path = Utf8PathBuf::from(path);
+        Auth::Agent { path }
+    }
 }
 
 /// SSH session.
