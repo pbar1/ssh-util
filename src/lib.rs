@@ -51,6 +51,12 @@ pub enum Auth {
 }
 
 impl Auth {
+    fn from_password_file(password_file: impl AsRef<Utf8Path>) -> Auth {
+        let password = std::fs::read_to_string(password_file.as_ref()).expect("todo");
+        let password = SecretString::from(password);
+        Auth::Password(password)
+    }
+
     fn from_key_file(
         private_key_file: impl AsRef<Utf8Path>,
         passphrase: Option<impl AsRef<str>>,
