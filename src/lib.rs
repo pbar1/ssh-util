@@ -1,7 +1,5 @@
 #![warn(clippy::pedantic)]
 
-use state_shift::type_state;
-
 #[cfg(feature = "libssh2")]
 mod libssh2;
 #[cfg(feature = "openssh")]
