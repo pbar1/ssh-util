@@ -1,11 +1,15 @@
 #![warn(clippy::pedantic)]
 
+use std::fmt::Debug;
+
 use bon::Builder;
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use secrecy::SecretSlice;
 use secrecy::SecretString;
 use thiserror::Error;
+
+use crate::transport::Transport;
 
 #[cfg(feature = "libssh2")]
 mod libssh2;
@@ -15,6 +19,7 @@ mod mock;
 mod openssh;
 #[cfg(feature = "russh")]
 mod russh;
+mod transport;
 
 /// Alias for [`std::result::Result`] with this crate's [`Error`] type.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -24,10 +29,15 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("File does not exist: {0}")]
     FileNotFound(Utf8PathBuf),
-    #[error("Unable to read file: {0}")]
-    ReadFile(#[from] std::io::Error),
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
     #[error("Failed reading environment variable: {0}")]
     EnvVar(#[from] std::env::VarError),
+    #[cfg(feature = "russh")]
+    #[error("Russh error: {0}")]
+    Russh(#[from] ::russh::Error),
+    #[error("Connect timed out")]
+    ConnectTimeout,
 }
 
 /// Underlying SSH implementation to use.
