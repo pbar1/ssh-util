@@ -5,6 +5,7 @@ use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use secrecy::SecretSlice;
 use secrecy::SecretString;
+use thiserror::Error;
 
 #[cfg(feature = "libssh2")]
 mod libssh2;
@@ -14,6 +15,20 @@ mod mock;
 mod openssh;
 #[cfg(feature = "russh")]
 mod russh;
+
+/// Alias for [`std::result::Result`] with this crate's [`Error`] type.
+pub type Result<T> = std::result::Result<T, Error>;
+
+/// Errors that can be encountered when using this crate.
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("File does not exist: {0}")]
+    FileNotFound(Utf8PathBuf),
+    #[error("Unable to read file: {0}")]
+    ReadFile(#[from] std::io::Error),
+    #[error("Failed reading environment variable: {0}")]
+    EnvVar(#[from] std::env::VarError),
+}
 
 /// Underlying SSH implementation to use.
 #[derive(Debug)]
@@ -52,49 +67,76 @@ pub enum Auth {
 
 impl Auth {
     /// Sources password from file.
-    pub fn from_password_file(password_file: impl AsRef<Utf8Path>) -> Auth {
-        let password = std::fs::read_to_string(password_file.as_ref()).expect("todo");
-        let password = SecretString::from(password);
-        Auth::Password(password)
+    ///
+    /// # Errors
+    ///
+    /// - If `password_file` cannot be read.
+    pub fn from_password_file(password_file: impl AsRef<Utf8Path>) -> Result<Auth> {
+        let password = read_secret_string(password_file.as_ref())?;
+
+        Ok(Auth::Password(password))
     }
 
     /// Sources SSH private key from file.
+    ///
+    /// # Errors
+    ///
+    /// - If `private_key_file` cannot be read.
     pub fn from_key_file(
         private_key_file: impl AsRef<Utf8Path>,
         passphrase: Option<impl AsRef<str>>,
-    ) -> Auth {
-        let private_key = std::fs::read(private_key_file.as_ref()).expect("todo");
-        let private_key = SecretSlice::from(private_key);
+    ) -> Result<Auth> {
+        let private_key = read_secret_bytes(private_key_file.as_ref())?;
+
         let passphrase = passphrase.map(|s| SecretString::from(s.as_ref()));
-        Auth::Key {
+
+        Ok(Auth::Key {
             private_key,
             passphrase,
-        }
+        })
     }
 
     /// Sources SSH certificate and private key from files.
+    ///
+    /// # Errors
+    ///
+    /// - If `private_key` cannot be read.
+    /// - If `certificate_file` cannot be read.
     pub fn from_cert_file(
         private_key_file: impl AsRef<Utf8Path>,
         passphrase: Option<impl AsRef<str>>,
         certificate_file: impl AsRef<Utf8Path>,
-    ) -> Auth {
-        let private_key = std::fs::read(private_key_file.as_ref()).expect("todo");
-        let private_key = SecretSlice::from(private_key);
+    ) -> Result<Auth> {
+        let private_key = read_secret_bytes(private_key_file.as_ref())?;
+
         let passphrase = passphrase.map(|s| SecretString::from(s.as_ref()));
-        let certificate = std::fs::read(certificate_file.as_ref()).expect("todo");
-        Auth::Certificate {
+
+        let certificate = read_bytes(certificate_file.as_ref())?;
+
+        Ok(Auth::Certificate {
             private_key,
             passphrase,
             certificate,
-        }
+        })
     }
 
     /// Sources SSH agent to connect to from `SSH_AUTH_SOCK` environment
     /// variable.
-    pub fn from_agent_env() -> Auth {
-        let path = std::env::var("SSH_AUTH_SOCK").expect("todo");
-        let path = Utf8PathBuf::from(path);
-        Auth::Agent { path }
+    ///
+    /// # Errors
+    ///
+    /// - If `SSH_AUTH_SOCK` environment variable is nonexistent or unreadable.
+    /// - If the path value sourced from `SSH_AUTH_SOCK` does not exist.
+    pub fn from_agent_env() -> Result<Auth> {
+        let path = std::env::var("SSH_AUTH_SOCK")
+            .map(Utf8PathBuf::from)
+            .map_err(Error::from)?;
+
+        if !path.try_exists().map_err(Error::from)? {
+            return Err(Error::FileNotFound(path));
+        }
+
+        Ok(Self::Agent { path })
     }
 }
 
@@ -112,6 +154,7 @@ pub struct Session {
     /// Port to connect to on the remote host.
     #[builder(default = 22)]
     port: u16,
+    /// Underlying SSH implementation.
     driver: Driver,
 }
 
@@ -175,18 +218,51 @@ pub mod fs {
     pub struct ReadDir {}
 }
 
+fn read_bytes(path: &Utf8Path) -> Result<Vec<u8>> {
+    if !path.try_exists().map_err(Error::from)? {
+        return Err(Error::FileNotFound(path.to_owned()));
+    }
+
+    let value = std::fs::read(path).map_err(Error::from)?;
+
+    Ok(value)
+}
+
+fn read_secret_string(path: &Utf8Path) -> Result<SecretString> {
+    if !path.try_exists().map_err(Error::from)? {
+        return Err(Error::FileNotFound(path.to_owned()));
+    }
+
+    let secret = std::fs::read_to_string(path)
+        .map(SecretString::from)
+        .map_err(Error::from)?;
+
+    Ok(secret)
+}
+
+fn read_secret_bytes(path: &Utf8Path) -> Result<SecretSlice<u8>> {
+    if !path.try_exists().map_err(Error::from)? {
+        return Err(Error::FileNotFound(path.to_owned()));
+    }
+
+    let secret = std::fs::read(path)
+        .map(SecretSlice::from)
+        .map_err(Error::from)?;
+
+    Ok(secret)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_session_builder() {
-        let session = Session::builder()
+        let session = Session::mock()
             .user("root")
             .host("localhost")
             .port(22)
             .auth(Auth::Password("password".into()))
-            .driver(Driver::Mock)
             .build();
         dbg!(session);
     }
