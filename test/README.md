@@ -29,3 +29,25 @@ SSH certificates
 ssh-keygen -s ca -I test_identity -n test_user -V 0x1:0x2000000000 id_ed25519.pub
 ssh-keygen -s ca -I test_identity -n test_user -V 0x1:0x2000000000 enc_ed25519.pub
 ```
+
+## Connect commands
+
+Password 
+
+```
+ssh -F none -o UserKnownHostsFile=/dev/null -p 2222 test_user@127.0.0.1
+```
+
+Certificate
+
+```
+ssh -F none -o UserKnownHostsFile=/dev/null -p 2222 -i creds/id_ed25519 test_user@127.0.0.1
+```
+
+## Other commands
+
+View active cert in a connected session
+
+```
+cat $SSH_USER_AUTH | cut -d' ' -f2-
+```

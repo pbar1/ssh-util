@@ -133,7 +133,7 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case("test/password", "test_password")]
+    #[case("test/creds/password", "test_password")]
     fn from_password_file_works(#[case] file: &str, #[case] password_should: &str) {
         let auth = Auth::from_password_file(file).unwrap();
         match auth {
@@ -144,22 +144,22 @@ mod tests {
 
     #[rstest]
     #[case(
-        "test/id_rsa",
+        "test/creds/id_rsa",
         None,
         "SHA256:GJ0nE5DC04QqMlXKqNmbUqxpOWCSUZmbTMck+TlwGVM"
     )]
     #[case(
-        "test/id_ecdsa",
+        "test/creds/id_ecdsa",
         None,
         "SHA256:38PO2EwrjSu2AL8EymRDow4cbQveqNZIkvob8hbvYh8"
     )]
     #[case(
-        "test/id_ed25519",
+        "test/creds/id_ed25519",
         None,
         "SHA256:qqVUhwuqHFgBv4R85QmdFIsKWkacxZ/MeB9oSXDbC7k"
     )]
     #[case(
-        "test/enc_ed25519",
+        "test/creds/enc_ed25519",
         Some("test_passphrase"),
         "SHA256:B/3vyYVgh7+kd7RuXKEC7zXvgegxUsVkHtNH+HC8XOM"
     )]
@@ -182,12 +182,12 @@ mod tests {
 
     #[rstest]
     #[case(
-        "test/id_ed25519",
+        "test/creds/id_ed25519",
         None,
         "SHA256:qqVUhwuqHFgBv4R85QmdFIsKWkacxZ/MeB9oSXDbC7k"
     )]
     #[case(
-        "test/enc_ed25519",
+        "test/creds/enc_ed25519",
         Some("test_passphrase"),
         "SHA256:B/3vyYVgh7+kd7RuXKEC7zXvgegxUsVkHtNH+HC8XOM"
     )]

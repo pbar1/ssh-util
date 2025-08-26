@@ -1,11 +1,13 @@
-version: "3"
-
 services:
   ssh:
     image: lscr.io/linuxserver/openssh-server:latest
     environment:
       - PASSWORD_ACCESS=true
-      - USER_NAME=user
-      - USER_PASSWORD=password
+      - USER_NAME=test_user
+      - USER_PASSWORD=test_password
+      - LOG_STDOUT=true
     ports:
       - "2222:2222"
+    volumes:
+      - ./test/config:/config
+      - ./test/creds/ca.pub:/etc/ssh/ca.pub
