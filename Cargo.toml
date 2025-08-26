@@ -16,6 +16,7 @@ camino = "1"
 futures = "0.3"
 russh = { version = "0.54", optional = true }
 secrecy = "0.10"
+ssh-key = { version = "0.6.7", features = ["encryption"] }
 thiserror = "2"
 tokio = { version = "1", features = ["process", "net"] }
 tracing = "0.1"
@@ -23,4 +24,5 @@ typestate = "0.8.0"
 
 [dev-dependencies]
 anyhow = "1"
+rstest = "0.26.1"
 tokio = { version = "1", features = ["full"] }
