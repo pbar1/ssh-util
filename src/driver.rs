@@ -1,3 +1,6 @@
+use crate::Result;
+use crate::process::Command;
+
 #[cfg(feature = "libssh2")]
 mod libssh2;
 #[cfg(test)]
@@ -22,4 +25,16 @@ pub enum DriverKind {
     /// Pure Rust [russh](https://github.com/Eugeny/russh) library.
     #[cfg(feature = "russh")]
     Russh,
+}
+
+pub trait Driver {
+    type Session: Session;
+
+    async fn connect(self) -> Result<Self::Session>;
+}
+
+pub trait Session {
+    async fn authenticate(&mut self) -> Result<()>;
+
+    fn command(&self) -> Command;
 }

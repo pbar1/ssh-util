@@ -19,6 +19,7 @@ secrecy = "0.10"
 thiserror = "2"
 tokio = { version = "1", features = ["process", "net"] }
 tracing = "0.1"
+typestate = "0.8.0"
 
 [dev-dependencies]
 anyhow = "1"

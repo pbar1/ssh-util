@@ -1,19 +1,82 @@
+use std::net::SocketAddr;
 use std::sync::Arc;
 
+use bon::Builder;
 use russh::client::Handle;
+use secrecy::ExposeSecret;
 
+use crate::Auth;
 use crate::Result;
+use crate::driver::Driver;
+use crate::driver::Session;
+use crate::transport::Transport;
+use crate::transport::TransportFactory;
 
-pub(crate) struct SessionImpl {
-    handle: Handle<ClientHandler>,
+#[derive(Builder)]
+pub struct RusshDriver<T: TransportFactory> {
+    #[builder(field)]
+    auth: Vec<Auth>,
+
+    #[builder(into)]
+    user: String,
+    addr: SocketAddr,
+    transport_factory: T,
 }
 
-pub async fn connect(host: &str) -> Result<()> {
-    let config = Arc::new(russh::client::Config::default());
+impl<T: TransportFactory> Driver for RusshDriver<T> {
+    type Session = RusshSession;
 
-    let session = russh::client::connect(config, host, ClientHandler).await?;
+    async fn connect(self) -> Result<Self::Session> {
+        let transport = self.transport_factory.connect(self.addr).await.unwrap();
 
-    Ok(())
+        let config = Arc::new(russh::client::Config::default());
+
+        let handle = match transport {
+            Transport::None => panic!(),
+            Transport::TokioTcp(tcp_stream) => {
+                russh::client::connect_stream(config, tcp_stream, ClientHandler)
+                    .await
+                    .unwrap()
+            }
+        };
+
+        Ok(RusshSession {
+            handle,
+            user: self.user,
+            auth: self.auth,
+        })
+    }
+}
+
+pub struct RusshSession {
+    handle: Handle<ClientHandler>,
+    user: String,
+    auth: Vec<Auth>,
+}
+
+impl Session for RusshSession {
+    async fn authenticate(&mut self) -> Result<()> {
+        for payload in &self.auth {
+            let auth_result = match payload {
+                Auth::Password(password) => self
+                    .handle
+                    .authenticate_password(&self.user, password.expose_secret())
+                    .await
+                    .unwrap(),
+                _ => todo!(),
+            };
+
+            if auth_result.success() {
+                return Ok(());
+            }
+        }
+
+        todo!()
+    }
+
+    fn command(&self) -> crate::process::Command {
+        todo!()
+    }
 }
 
 struct ClientHandler;
